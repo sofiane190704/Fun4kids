@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inscription en ligne — Fun4Kids</title>
+<meta name="description" content="Inscrivez votre enfant en 3 étapes chez Fun4Kids : académie de futsal, anniversaire, stage ou séjour.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header__bar">
+    <a href="./index.html" class="site-header__logo"><img src="./images/logo-fun4kids.jpeg" alt="Fun4Kids"></a>
+    <nav class="site-nav">
+      <a href="./academie.html">Académie</a>
+      <a href="./anniversaires.html">Anniversaire</a>
+      <a href="./stages.html">Stage</a>
+      <a href="./sejour.html">Séjour</a>
+      <a href="./contact.html">Contact</a>
+    </nav>
+    <button class="nav-toggle" data-nav-toggle aria-label="Ouvrir le menu" aria-expanded="false">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2E2A27" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="btn btn-soft btn-md" style="cursor:default">Inscription</span>
+  </div>
+</header>
+
+<section style="max-width:900px;margin:0 auto;padding:54px 32px 10px;display:flex;flex-direction:column;gap:26px;align-items:center;text-align:center">
+  <h1 style="font-size:46px;line-height:1.1">Inscription en ligne</h1>
+  <p style="font-size:18px;line-height:1.65;color:var(--muted);max-width:600px">Trois étapes, cinq minutes : choisissez l'activité, complétez la fiche et envoyez votre demande.</p>
+
+  <div class="stepper">
+    <div class="stepper__row">
+      <div class="stepper__step is-active" data-step-indicator="1">
+        <span class="stepper__num">1</span><span class="stepper__label">Activité</span>
+      </div>
+      <div class="stepper__step" data-step-indicator="2">
+        <span class="stepper__num">2</span><span class="stepper__label">Formulaire</span>
+      </div>
+      <div class="stepper__step" data-step-indicator="3">
+        <span class="stepper__num">3</span><span class="stepper__label">Confirmation</span>
+      </div>
+    </div>
+    <div class="stepper__track"><div class="stepper__fill" data-stepper-fill></div></div>
+  </div>
+</section>
+
+<!-- STEP 1 — activity picker -->
+<section id="step-1" data-step="1" style="max-width:1240px;margin:0 auto;padding:52px 32px 96px">
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px">
+    <span class="eyebrow eyebrow-orange">Étape 1</span>
+    <h2 style="font-size:36px">Quelle activité souhaitez-vous réserver ?</h2>
+  </div>
+  <div class="grid-2">
+    <button type="button" class="pick-card" data-pick="academie" style="background:var(--orange)">
+      <span class="pick-card__icon">⚽</span>
+      <span style="font-weight:700;font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:#FFE7DA">Toute la saison</span>
+      <h3>Académie</h3>
+      <p style="color:#FFE7DA">Entraînements de futsal hebdomadaires, du Baby Futsal aux séances gardien.</p>
+      <span class="pick-card__cta" style="color:var(--orange)">Choisir →</span>
+    </button>
+    <button type="button" class="pick-card" data-pick="anniv" style="background:var(--blue)">
+      <span class="pick-card__icon">🎉</span>
+      <span style="font-weight:700;font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:#DDF1FB">Week-end</span>
+      <h3>Anniversaire</h3>
+      <p style="color:#DDF1FB">Trois heures de jeux animés par notre équipe, formule clé en main.</p>
+      <span class="pick-card__cta" style="color:var(--blue)">Choisir →</span>
+    </button>
+    <button type="button" class="pick-card" data-pick="stage" style="background:var(--green)">
+      <span class="pick-card__icon">🎒</span>
+      <span style="font-weight:700;font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:#EDF8DE">Vacances scolaires</span>
+      <h3>Stage</h3>
+      <p style="color:#EDF8DE">Semaines multisports et créatives de 9h à 16h, garderie incluse.</p>
+      <span class="pick-card__cta" style="color:var(--green)">Choisir →</span>
+    </button>
+    <button type="button" class="pick-card" data-pick="sejour" style="background:var(--purple)">
+      <span class="pick-card__icon">🏖️</span>
+      <span style="font-weight:700;font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:#EAE0F5">Printemps 2027</span>
+      <h3>Séjour</h3>
+      <p style="color:#EAE0F5">Neuf jours de futsal et d'activités à Lloret del Mar, 10 – 17 ans.</p>
+      <span class="pick-card__cta" style="color:var(--purple)">Choisir →</span>
+    </button>
+  </div>
+</section>
+
+<!-- STEP 2 — dynamic form -->
+<section id="step-2" data-step="2" style="max-width:900px;margin:0 auto;padding:48px 32px 96px;display:none">
+  <button type="button" class="step-back" data-go="1">← Changer d'activité</button>
+  <form id="inscription-form" style="background:#fff;border:1px solid var(--border);border-radius:36px;padding:38px;box-shadow:0 14px 38px rgba(46,42,39,0.08);display:flex;flex-direction:column;gap:26px">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <span class="badge badge-orange" data-activity-badge>Activité</span>
+      <h2 style="font-size:32px">Fiche d'inscription</h2>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <h3 style="font-size:21px;color:var(--ink-soft)">Responsable légal</h3>
+      <div class="form-grid-2">
+        <label class="field"><span class="label">Nom et prénom</span><input type="text" name="parent_nom" placeholder="Marie Dupont" required></label>
+        <label class="field"><span class="label">Téléphone</span><input type="tel" name="parent_tel" placeholder="0470 00 00 00" required></label>
+      </div>
+      <label class="field"><span class="label">E-mail</span><input type="email" name="parent_email" placeholder="marie@exemple.be" required></label>
+    </div>
+
+    <!-- Anniversaire fields -->
+    <div data-fields="anniv" style="display:none;flex-direction:column;gap:16px">
+      <h3 style="font-size:21px;color:var(--ink-soft)">La fête</h3>
+      <div class="form-grid-2">
+        <label class="field"><span class="label">Date souhaitée</span><input type="date" name="anniv_date"></label>
+        <label class="field"><span class="label">Nombre d'enfants (10 min.)</span><input type="number" name="anniv_count" min="10" placeholder="12"></label>
+      </div>
+      <label class="field">
+        <span class="label">Formule</span>
+        <select name="anniv_formule">
+          <option>Jeux multisport</option>
+          <option>1h multisport + 1h chasse au trésor</option>
+        </select>
+      </label>
+      <label class="field"><span class="label">Thème de la chasse au trésor</span><input type="text" name="anniv_theme" placeholder="Pokémon, pirates, princesses…"></label>
+    </div>
+
+    <!-- Child info (académie / stage / séjour) -->
+    <div data-fields="child" style="display:none;flex-direction:column;gap:16px">
+      <h3 style="font-size:21px;color:var(--ink-soft)" data-child-title>Informations de l'enfant</h3>
+      <div class="form-grid-2">
+        <label class="field"><span class="label">Nom</span><input type="text" name="child_nom" placeholder="Dupont"></label>
+        <label class="field"><span class="label">Prénom</span><input type="text" name="child_prenom" placeholder="Louis"></label>
+      </div>
+      <label class="field"><span class="label">Date de naissance</span><input type="date" name="child_naissance"></label>
+    </div>
+
+    <!-- Académie fields -->
+    <div data-fields="academie" style="display:none;flex-direction:column;gap:16px">
+      <label class="field">
+        <span class="label">Catégorie / équipe souhaitée</span>
+        <select name="academie_categorie">
+          <option>Baby Futsal (2 – 3 ans)</option>
+          <option>Séances 4 – 99 ans</option>
+          <option>Entraînement spécifique (dès 6 ans)</option>
+          <option>Entraînement gardien (dès 6 ans)</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="label">Formule</span>
+        <select name="academie_formule" data-academie-formule>
+          <option>1 séance par semaine (290 €)</option>
+          <option>2 séances par semaine (390 €)</option>
+        </select>
+      </label>
+      <label class="field" data-academie-jour>
+        <span class="label">Jour d'entraînement souhaité</span>
+        <select name="academie_jour">
+          <option>Lundi · 17h00 – 18h30 (U8/U9/10/U11/U13)</option>
+          <option>Jeudi · 16h30 – 18h00 (U15/U16+)</option>
+          <option>Samedi · 14h00 – 15h30 (U8/U9/10/U11)</option>
+          <option>Samedi · 15h45 – 16h45 (Baby Futsal)</option>
+          <option>Dimanche · 13h00 – 14h30 (U12/U13)</option>
+          <option>Dimanche · 14h30 – 16h00 (U15)</option>
+          <option>Dimanche · 16h30 – 18h00 (U16+)</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- Stage fields -->
+    <div data-fields="stage" style="display:none;flex-direction:column;gap:16px">
+      <label class="field">
+        <span class="label">Semaine de stage</span>
+        <select name="stage_semaine">
+          <option>Halloween approche ! — 19 au 23 octobre</option>
+          <option>Halloween, la suite ! — 26 au 30 octobre</option>
+          <option>Semaine givrée — 22 au 24 décembre</option>
+        </select>
+      </label>
+      <div class="form-grid-2">
+        <label class="field">
+          <span class="label">Tranche d'âge</span>
+          <select name="stage_age">
+            <option>2,5 – 5 ans (85 €)</option>
+            <option>6 – 12 ans (100 €)</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="label">Garderie souhaitée</span>
+          <select name="stage_garderie">
+            <option>Non merci</option>
+            <option>Matin (dès 7h15)</option>
+            <option>Soir (jusqu'à 18h)</option>
+            <option>Matin et soir</option>
+          </select>
+        </label>
+      </div>
+      <label class="field">
+        <span class="label">Activités souhaitées</span>
+        <select name="stage_activites">
+          <option>Multisports</option>
+          <option>Futsal</option>
+          <option>Cuisine</option>
+          <option>Activités artistiques</option>
+          <option>Informatique</option>
+          <option>Aventure</option>
+          <option>Peu importe</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- Séjour fields -->
+    <div data-fields="sejour" style="display:none;flex-direction:column;gap:16px">
+      <label class="field">
+        <span class="label">Session</span>
+        <select name="sejour_session">
+          <option>Lloret del Mar 2027 — 24 avril au 2 mai</option>
+        </select>
+      </label>
+      <h3 style="font-size:21px;color:var(--ink-soft)">Contact d'urgence pendant le séjour</h3>
+      <div class="form-grid-2">
+        <label class="field"><span class="label">Nom et prénom</span><input type="text" name="sejour_urgence_nom" placeholder="Pierre Dupont"></label>
+        <label class="field"><span class="label">Téléphone joignable 24h/24</span><input type="tel" name="sejour_urgence_tel" placeholder="0470 00 00 00"></label>
+      </div>
+    </div>
+
+    <div data-fields="child" style="display:none">
+      <label class="field"><span class="label">Informations utiles à l'encadrement</span><textarea name="notes_medicales" rows="4" placeholder="Allergies, traitement en cours, informations médicales, précisions utiles…"></textarea></label>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:22px">
+      <span style="font-size:14.5px;color:var(--muted-2);max-width:360px">Vos données ne servent qu'à organiser l'activité et ne sont jamais transmises à des tiers.</span>
+      <button type="submit" class="btn btn-primary btn-lg">Suivant</button>
+    </div>
+  </form>
+</section>
+
+<!-- STEP 3 — recap -->
+<section id="step-3" data-step="3" style="max-width:1000px;margin:0 auto;padding:48px 32px 96px;display:none">
+  <button type="button" class="step-back" data-go="2">← Modifier la fiche</button>
+  <div class="grid-2" style="align-items:start">
+    <div style="background:var(--cream);border-radius:34px;padding:32px;display:flex;flex-direction:column;gap:20px">
+      <h2 style="font-size:28px">Récapitulatif</h2>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="recap-row"><span class="k">Activité</span><span class="v" data-recap="activite">—</span></div>
+        <div class="recap-row"><span class="k">Formule / date</span><span class="v" data-recap="option">—</span></div>
+        <div class="recap-row"><span class="k">Participant</span><span class="v" data-recap="participant">—</span></div>
+        <div class="recap-row"><span class="k">Responsable</span><span class="v" data-recap="responsable">—</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--orange);border-radius:22px;padding:20px 22px">
+        <div style="display:flex;flex-direction:column">
+          <span style="font-size:15px;color:#FFE7DA">Montant à verser</span>
+          <span style="font-size:14px;color:#FFE7DA" data-recap="price-note">—</span>
+        </div>
+        <span style="font-family:'Baloo 2';font-weight:800;font-size:34px;color:#fff" data-recap="price">—</span>
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:34px;padding:32px;box-shadow:0 14px 38px rgba(46,42,39,0.08);display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="width:40px;height:40px;border-radius:14px;background:var(--green-soft);color:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:19px">✉</span>
+        <h2 style="font-size:26px">Dernière étape</h2>
+      </div>
+      <p style="font-size:16.5px;line-height:1.7;color:var(--muted)">Vérifiez le récapitulatif, puis envoyez votre demande. L'équipe Fun4Kids vous recontactera par e-mail avec les <strong>informations bancaires</strong> (montant, numéro de compte et communication) à utiliser pour valider définitivement l'inscription.</p>
+      <div style="background:var(--cream);border-radius:22px;padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:12px;align-items:flex-start"><span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">1</span><span style="font-size:16px;line-height:1.55;color:var(--ink-soft)">Vous envoyez la demande d'inscription</span></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">2</span><span style="font-size:16px;line-height:1.55;color:var(--ink-soft)">L'équipe Fun4Kids vous recontacte par e-mail avec les informations bancaires</span></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">3</span><span style="font-size:16px;line-height:1.55;color:var(--ink-soft)">Le virement reçu, la place est définitivement réservée</span></div>
+      </div>
+      <div id="inscription-status" class="form-status" role="status"></div>
+      <button type="button" id="send-request" class="btn btn-primary btn-lg btn-block">Envoyer ma demande</button>
+      <span style="text-align:center;font-size:14px;color:var(--muted-2)">En envoyant, vous acceptez le règlement des activités Fun4Kids.</span>
+    </div>
+  </div>
+</section>
+
+<!-- DONE -->
+<section id="step-done" data-step="done" style="max-width:820px;margin:0 auto;padding:56px 32px 110px;display:none">
+  <div style="background:var(--cream);border-radius:40px;padding:56px 48px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px">
+    <span style="width:86px;height:86px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:40px">✓</span>
+    <h2 style="font-size:38px;line-height:1.15">Demande bien reçue !</h2>
+    <p style="font-size:18.5px;line-height:1.7;color:var(--muted);max-width:560px">Votre demande a été enregistrée. L'équipe Fun4Kids va revenir vers <strong data-done="email">vous</strong> par e-mail avec le récapitulatif et les <strong>informations bancaires</strong> à utiliser pour valider la demande. Dès réception du virement, la place est définitivement réservée.</p>
+    <div style="background:#fff;border-radius:24px;padding:22px 26px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:480px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><span style="font-size:15.5px;color:var(--muted-2)">Activité</span><span style="font-family:'Baloo 2';font-weight:700;font-size:17px" data-done="activite">—</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><span style="font-size:15.5px;color:var(--muted-2)">Formule / date</span><span style="font-family:'Baloo 2';font-weight:700;font-size:17px;text-align:right" data-done="option">—</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><span style="font-size:15.5px;color:var(--muted-2)">Montant à verser</span><span style="font-family:'Baloo 2';font-weight:700;font-size:17px;color:var(--orange)" data-done="price">—</span></div>
+    </div>
+    <p style="font-size:16px;line-height:1.65;color:var(--muted)">Une question en attendant ? Appelez-nous au 0477 / 99.58.33.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:6px">
+      <button type="button" id="restart" class="btn btn-primary" style="font-size:18px;padding:15px 32px">Inscrire un autre enfant</button>
+      <a href="./index.html" class="btn btn-outline" style="font-size:18px;padding:13px 30px">Retour à l'accueil</a>
+    </div>
+  </div>
+</section>
+
+<footer style="background:var(--footer-bg);padding:48px 32px 28px">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;gap:30px;flex-wrap:wrap">
+    <img src="./images/logo-fun4kids.jpeg" alt="Fun4Kids" style="height:56px;width:auto;background:var(--white);border-radius:14px;padding:6px 10px">
+    <div style="display:flex;gap:28px;flex-wrap:wrap">
+      <a href="mailto:info@fun4kidsasbl.be" style="font-size:15.5px;color:var(--footer-text)">info@fun4kidsasbl.be</a>
+      <a href="tel:+32477995833" style="font-size:15.5px;color:var(--footer-text)">0477 / 99.58.33</a>
+      <a href="https://www.fun4kidsasbl.com" style="font-size:15.5px;color:var(--footer-text)">www.fun4kidsasbl.com</a>
+    </div>
+    <span style="font-size:14px;color:var(--muted-2)">© 2026 Fun4Kids ASBL — Enghien</span>
+  </div>
+</footer>
+
+<script src="./js/main.js"></script>
+<script src="./js/inscription.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+# One-time setup: creates the Fly.io app and its persistent data volume.
+# Run this ONCE (Actions tab -> "Fly: one-time setup" -> Run workflow)
+# before the first push-triggered deploy. Safe to re-run — it skips
+# creation if the app/volume already exist.
+name: Fly - one-time setup
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Create Fly app (skip if it already exists)
+        run: flyctl apps create fun4kids-asbl || echo "App already exists, continuing."
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Create persistent volume (skip if it already exists)
+        run: |
+          if flyctl volumes list -a fun4kids-asbl | grep -q fun4kids_data; then
+            echo "Volume already exists, skipping."
+          else
+            flyctl volumes create fun4kids_data \
+              --app fun4kids-asbl \
+              --region cdg \
+              --size 1 \
+              --yes
+          fi
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

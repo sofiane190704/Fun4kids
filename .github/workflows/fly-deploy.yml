@@ -1,0 +1,27 @@
+# Deploys the Fun4Kids site to Fly.io on every push to main that touches
+# site/. Requires the one-time setup workflow to have been run first
+# (creates the app + persistent volume), and a FLY_API_TOKEN repo secret.
+name: Fly - deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/fly-deploy.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
