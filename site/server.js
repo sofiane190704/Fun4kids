@@ -24,9 +24,24 @@ app.use(express.static(PUBLIC_DIR));
 
 // Diagnostic only — confirms whether submissions are being written to
 // Vercel Blob (persistent) or the local disk fallback (lost between
-// invocations on Vercel). No data exposed, just the storage mode.
-app.get('/api/_storage-mode', (req, res) => {
-  res.json({ storage: blobStore.USE_BLOB ? 'vercel-blob' : 'local-disk' });
+// invocations on Vercel), and does a real write+read round-trip against a
+// throwaway key (not one of the real csv/xlsx files) to catch auth/permission
+// errors the mode check alone can't see. No submission data exposed.
+app.get('/api/_storage-mode', async (req, res) => {
+  const mode = blobStore.USE_BLOB ? 'vercel-blob' : 'local-disk';
+  if (!blobStore.USE_BLOB) {
+    return res.json({ storage: mode });
+  }
+  const testKey = 'data/_diagnostic-test.txt';
+  const stamp = new Date().toISOString();
+  try {
+    await blobStore.writeBlob(testKey, Buffer.from(stamp, 'utf8'), 'text/plain');
+    const readBack = await blobStore.readBlob(testKey);
+    const roundtripOk = !!readBack && readBack.toString('utf8') === stamp;
+    res.json({ storage: mode, roundtripOk });
+  } catch (err) {
+    res.json({ storage: mode, roundtripOk: false, error: String(err && err.message || err) });
+  }
 });
 
 const CONTACT_COLUMNS = ['timestamp', 'nom', 'email', 'sujet', 'message'];
