@@ -505,4 +505,14 @@ section { position: relative; }
   }
   .site-footer__grid { grid-template-columns: 1fr; }
   .section, .section-tight { padding: 56px 20px; }
+  /* Several page sections pair text with a photo using an inline
+     grid-template-columns (design handoff kept exact per-section ratios
+     like 0.85fr/1.15fr rather than the shared .grid-2 class). An inline
+     style always wins over a normal class rule regardless of media query,
+     so without !important here these stayed 2 columns on phones and
+     pushed their second column — almost always the photo — off-screen
+     (clipped invisible, not just requiring a scroll: body has
+     overflow-x: clip). !important is the correct, narrow tool for
+     overriding an inline style from an external stylesheet. */
+  .split-2col { grid-template-columns: 1fr !important; gap: 28px !important; }
 }
