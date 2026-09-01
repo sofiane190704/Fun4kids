@@ -52,17 +52,27 @@ instead of on disk when running on Vercel — see `lib/blobStore.js`. Locally
 To enable it in production:
 1. In the Vercel dashboard, open the project → **Storage** tab → **Create
    Database** → **Blob** (or `vercel blob create-store` via the CLI), and
-   connect it to this project. That step alone sets the `BLOB_READ_WRITE_TOKEN`
-   environment variable Vercel injects automatically — no code change needed.
-2. Redeploy (or just wait for the next request) — `lib/blobStore.js` detects
-   the token and switches from disk to Blob automatically.
+   connect it to this project (make sure **Production** is checked, not just
+   Preview). That step alone sets an env var Vercel injects automatically —
+   no code change needed. Newer stores connect via OIDC and expose
+   `BLOB_STORE_ID` (no visible token — auth happens through Vercel's own
+   `VERCEL_OIDC_TOKEN`, injected automatically at runtime); older/manually
+   created stores instead expose a static `BLOB_READ_WRITE_TOKEN`.
+   `lib/blobStore.js` checks for either.
+2. Redeploy (or just wait for the next request) — `lib/blobStore.js` picks
+   up whichever env var is present and switches from disk to Blob
+   automatically. You can confirm it worked by hitting
+   `GET /api/_storage-mode` on the live site — it returns
+   `{"storage":"vercel-blob"}` once this is wired up correctly, or
+   `{"storage":"local-disk"}` if it isn't yet.
 3. To read submissions afterwards: `vercel blob list` / `vercel blob get
    data/contact.csv --output contact.csv` (repeat for the `.xlsx` rosters),
    or fetch them programmatically with `@vercel/blob`'s `list()`/`get()`.
 
-Until step 1 is done, `/api/contact` and `/api/inscription` will still
-respond `200 OK` but their writes are effectively lost on redeploy/cold
-start — do this before sharing the live URL with real families.
+Until step 1 is done (and confirmed via `/api/_storage-mode`), `/api/contact`
+and `/api/inscription` will still respond `200 OK` but their writes are
+effectively lost on redeploy/cold start — do this before sharing the live
+URL with real families.
 
 **Known limitation:** Blob mode reads the whole file, appends the new row in
 memory, and re-uploads the whole file (`allowOverwrite: true`) — there's no

@@ -3,11 +3,17 @@
 // persist between invocations) or locally / on a classic host with a real
 // writable disk.
 //
-// Mode is decided once, at require-time, from BLOB_READ_WRITE_TOKEN:
-//  - set (Vercel, once a Blob store is linked to the project) -> Blob mode.
-//  - unset (plain `node server.js` locally, or any host with a real disk
-//    that survives between requests) -> local-disk mode, unchanged from
-//    the original implementation.
+// Mode is decided once, at require-time, from the env vars Vercel injects
+// once a Blob store is connected to the project:
+//  - BLOB_STORE_ID (newer stores, connected via OIDC — no static token is
+//    exposed; @vercel/blob authenticates using the platform's own
+//    VERCEL_OIDC_TOKEN together with this store id, both automatic), or
+//  - BLOB_READ_WRITE_TOKEN (older/manually-created stores using a static
+//    read-write token instead of OIDC)
+// -> Blob mode either way.
+// Neither set (plain `node server.js` locally, or any host with a real disk
+// that survives between requests) -> local-disk mode, unchanged from the
+// original implementation.
 //
 // IMPORTANT — no file locking: a read-modify-write against Blob storage
 // (read the whole file, append in memory, re-upload the whole file) is not
@@ -18,7 +24,7 @@
 // persist at all. If Fun4Kids' volume grows a lot, revisit with a real
 // database instead of file storage.
 
-const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
+const USE_BLOB = !!(process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN);
 
 let blobSdk = null;
 function sdk() {
