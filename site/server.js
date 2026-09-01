@@ -12,6 +12,7 @@ const path = require('path');
 const express = require('express');
 const { appendRow } = require('./lib/csv');
 const xlsxRoster = require('./lib/xlsx');
+const blobStore = require('./lib/blobStore');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,13 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 
 app.use(express.json());
 app.use(express.static(PUBLIC_DIR));
+
+// Diagnostic only — confirms whether submissions are being written to
+// Vercel Blob (persistent) or the local disk fallback (lost between
+// invocations on Vercel). No data exposed, just the storage mode.
+app.get('/api/_storage-mode', (req, res) => {
+  res.json({ storage: blobStore.USE_BLOB ? 'vercel-blob' : 'local-disk' });
+});
 
 const CONTACT_COLUMNS = ['timestamp', 'nom', 'email', 'sujet', 'message'];
 const LOG_COLUMNS = ['timestamp', 'activite', 'payload'];
