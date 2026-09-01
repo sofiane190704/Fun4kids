@@ -64,4 +64,19 @@ async function writeBlob(pathname, content, contentType) {
   });
 }
 
-module.exports = { USE_BLOB, readBlob, writeBlob };
+/** Lists every blob whose pathname starts with `prefix` (paginating through
+ * all pages). Used by the admin panel to discover which submission files
+ * currently exist without having to hardcode their names. */
+async function listBlobs(prefix) {
+  const { list } = sdk();
+  const out = [];
+  let cursor;
+  do {
+    const result = await list({ prefix, cursor, limit: 1000 });
+    out.push(...result.blobs);
+    cursor = result.hasMore ? result.cursor : undefined;
+  } while (cursor);
+  return out;
+}
+
+module.exports = { USE_BLOB, readBlob, writeBlob, listBlobs };

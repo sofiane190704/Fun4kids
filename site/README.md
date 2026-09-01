@@ -7,23 +7,30 @@ Stages, Séjour, Contact, Inscription), built from the Claude Design handoff in
 ## Stack
 
 Plain static HTML/CSS/JS (`public/`), served by a small Express server
-(`server.js`) that also exposes two POST endpoints so the contact form and
-the inscription flow can save submissions:
-- contact messages → `data/contact.csv`
-- inscriptions → printable **Excel listings** under `data/` (see below)
+(`server.js`) that also exposes the POST endpoints so every form can save
+submissions — **each form gets its own `.xlsx` workbook** under `data/`:
+- contact messages → `data/contact.xlsx`
+- inscriptions → one printable **Excel listing per activity** under `data/`
+  (see below): `academie.xlsx`, `anniversaires.xlsx`, `sejour.xlsx`, and one
+  `stage-<semaine>.xlsx` per stage week.
+
+A small password-protected **admin panel** (`public/admin.html` +
+`/api/admin/*`) lets the ASBL team list and download all of these at any
+time — see "Récupérer les fichiers" below.
 
 ```
 site/
-├── server.js            # static file server + /api/contact, /api/inscription
-├── lib/csv.js            # tiny dependency-free CSV append helper (contact + audit log)
-├── lib/xlsx.js            # builds/updates the printable inscription workbooks (exceljs)
+├── server.js            # static file server + /api/contact, /api/inscription, /api/admin/*
+├── lib/csv.js            # tiny dependency-free CSV append helper (audit log only)
+├── lib/xlsx.js            # builds/updates every .xlsx workbook (exceljs) — contact + rosters
 ├── data/                 # *.csv / *.xlsx submissions land here (git-ignored)
 └── public/
     ├── index.html         academie.html   anniversaires.html
     ├── stages.html        sejour.html     contact.html
-    ├── inscription.html
+    ├── inscription.html   admin.html      # password-gated file listing/download
     ├── css/style.css      # shared design system (colors, buttons, cards, forms…)
     ├── js/main.js         # mobile nav + FAQ accordions
+    ├── js/consent.js      # cookie consent banner + Google Analytics loader
     ├── js/forms.js        # contact form -> POST /api/contact
     ├── js/inscription.js  # 3-step inscription flow -> POST /api/inscription
     └── images/            # real photos, extracted from the design's image-slots
@@ -65,9 +72,10 @@ To enable it in production:
    `GET /api/_storage-mode` on the live site — it returns
    `{"storage":"vercel-blob"}` once this is wired up correctly, or
    `{"storage":"local-disk"}` if it isn't yet.
-3. To read submissions afterwards: `vercel blob list` / `vercel blob get
-   data/contact.csv --output contact.csv` (repeat for the `.xlsx` rosters),
-   or fetch them programmatically with `@vercel/blob`'s `list()`/`get()`.
+3. To read submissions afterwards, use the **admin panel** (recommended —
+   see below), or `vercel blob list` / `vercel blob get data/contact.xlsx
+   --output contact.xlsx` (repeat per file), or fetch them programmatically
+   with `@vercel/blob`'s `list()`/`get()`.
 
 Until step 1 is done (and confirmed via `/api/_storage-mode`), `/api/contact`
 and `/api/inscription` will still respond `200 OK` but their writes are
@@ -80,10 +88,29 @@ locking. Two submissions landing in the exact same instant could in theory
 clobber each other. Fine for Fun4Kids' actual volume; revisit with a real
 database if submissions ever get busy enough for that to matter.
 
+## Récupérer les fichiers (admin panel)
+
+Go to `/admin.html` on the live site and log in with `ADMIN_PASSWORD` (set
+below) to list and download every submission file as `.xlsx`/`.csv` —
+`contact.xlsx`, `academie.xlsx`, `anniversaires.xlsx`, `sejour.xlsx`, every
+`stage-<semaine>.xlsx`, and `inscriptions-log.csv` (the full audit trail).
+
+**Setup (one-time):** in the Vercel dashboard, project → **Settings** →
+**Environment Variables**, add `ADMIN_PASSWORD` (Production, and Preview if
+you want to test there too) with a strong password, then redeploy. Until
+this is set, `/admin.html` and every `/api/admin/*` route respond with a
+"not configured" error rather than falling back to a default password.
+
+How it works: `/admin.html` posts the password to `/api/admin/login`, which
+returns a signed, time-limited (12h) session token — kept in the browser's
+`sessionStorage` only (cleared on tab close), never written to disk or
+logged. All list/download calls send it as a `Bearer` token. No plaintext
+password or token is ever stored server-side beyond the env var itself.
+
 ## What's wired up
 
 - **Contact form** (`contact.html`) posts to `/api/contact`, which appends a
-  row to `data/contact.csv` (timestamp, nom, email, sujet, message).
+  row to `data/contact.xlsx` (date, nom, email, sujet, message).
 - **Inscription flow** (`inscription.html`) is a 3-step client-side flow
   (activity → per-activity form → recap & submit → confirmation), mirroring
   the pricing/recap logic from the original design. On submit it posts to

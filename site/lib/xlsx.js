@@ -185,6 +185,20 @@ async function appendSejourRow(dataDir, data) {
   return appendRow(key, 'Listing Séjour — Lloret del Mar 2027', headers, values);
 }
 
+/** Contact-form message -> data/contact.xlsx, one running log. */
+async function appendContactRow(dataDir, data) {
+  const key = blobStore.USE_BLOB ? 'data/contact.xlsx' : path.join(dataDir, 'contact.xlsx');
+  const headers = ['N°', 'DATE', 'NOM', 'EMAIL', 'SUJET', 'MESSAGE'];
+  const values = [
+    new Date().toLocaleString('fr-BE'),
+    data.nom || '',
+    data.email || '',
+    data.sujet || '',
+    data.message || '',
+  ];
+  return appendRow(key, 'Messages de contact', headers, values);
+}
+
 module.exports = {
   computeAge,
   slugify,
@@ -192,4 +206,5 @@ module.exports = {
   appendAcademieRow,
   appendAnnivRow,
   appendSejourRow,
+  appendContactRow,
 };

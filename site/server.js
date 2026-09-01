@@ -1,14 +1,21 @@
 // Fun4Kids ASBL — static site server + form submission endpoints.
-// Serves public/ as-is. Contact messages are appended to data/contact.csv.
-// Inscriptions are appended to printable .xlsx "listing" workbooks under
-// data/ (one per activity; Stages get one workbook PER WEEK), matching the
-// ASBL's existing paper listing format — see lib/xlsx.js.
+// Serves public/ as-is. Every form (contact, académie, anniversaire, stage,
+// séjour) is appended to its own .xlsx workbook under data/ (Stages get one
+// workbook PER WEEK), matching the ASBL's existing paper listing format —
+// see lib/xlsx.js. A separate CSV audit log keeps the full raw payload of
+// every inscription (incl. optional medical notes, deliberately left out of
+// the printable rosters — see lib/xlsx.js header comment).
+//
+// A small password-protected admin panel (public/admin.html + /api/admin/*
+// below) lets the ASBL team list and download those files at any time —
+// see README.md for how to set ADMIN_PASSWORD.
 //
 // No outbound email is configured (no SMTP credentials were provided) —
 // submissions land in the files below and the ASBL team follows up
 // manually. See README.md for details.
 
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
 const { appendRow } = require('./lib/csv');
 const xlsxRoster = require('./lib/xlsx');
@@ -44,7 +51,6 @@ app.get('/api/_storage-mode', async (req, res) => {
   }
 });
 
-const CONTACT_COLUMNS = ['timestamp', 'nom', 'email', 'sujet', 'message'];
 const LOG_COLUMNS = ['timestamp', 'activite', 'payload'];
 
 // Extra required fields per activity, beyond the parent's own coordinates
@@ -69,15 +75,8 @@ app.post('/api/contact', async (req, res) => {
   if (!body.nom || !body.email || !body.message) {
     return res.status(400).json({ ok: false, error: 'Champs requis manquants.' });
   }
-  const row = {
-    timestamp: new Date().toISOString(),
-    nom: body.nom,
-    email: body.email,
-    sujet: body.sujet || '',
-    message: body.message,
-  };
   try {
-    await appendRow(DATA_DIR, 'contact', CONTACT_COLUMNS, row);
+    await xlsxRoster.appendContactRow(DATA_DIR, body);
     res.json({ ok: true });
   } catch (err) {
     console.error('contact write failed', err);
@@ -114,6 +113,132 @@ app.post('/api/inscription', async (req, res) => {
   } catch (err) {
     console.error('inscription write failed', err);
     res.status(500).json({ ok: false, error: 'Écriture impossible.' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Admin panel API — lets the ASBL team list and download every submission
+// file (contact.xlsx, academie.xlsx, anniversaires.xlsx, stage-*.xlsx,
+// sejour.xlsx, plus the inscriptions-log.csv audit trail) from
+// public/admin.html, gated behind a single shared password.
+//
+// ADMIN_PASSWORD must be set (Vercel project settings -> Environment
+// Variables) or every /api/admin/* route responds 503 — there is no
+// hardcoded fallback and no admin panel until it's configured.
+// ---------------------------------------------------------------------------
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12h
+// Secret used to sign session tokens. A dedicated ADMIN_TOKEN_SECRET is
+// preferred; if absent, one is derived from ADMIN_PASSWORD so only a single
+// env var is strictly required.
+const TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET
+  || crypto.createHash('sha256').update(ADMIN_PASSWORD).digest('hex');
+
+function signToken(expiresAt) {
+  const hmac = crypto.createHmac('sha256', TOKEN_SECRET).update(String(expiresAt)).digest('hex');
+  return Buffer.from(`${expiresAt}.${hmac}`).toString('base64url');
+}
+
+function verifyToken(token) {
+  try {
+    const [expiresAtStr, hmac] = Buffer.from(String(token), 'base64url').toString('utf8').split('.');
+    const expiresAt = Number(expiresAtStr);
+    if (!expiresAt || Date.now() > expiresAt) return false;
+    const expected = crypto.createHmac('sha256', TOKEN_SECRET).update(String(expiresAt)).digest('hex');
+    const a = Buffer.from(hmac || '');
+    const b = Buffer.from(expected);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  } catch (err) {
+    return false;
+  }
+}
+
+function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
+}
+
+function requireAdminConfigured(req, res, next) {
+  if (!ADMIN_PASSWORD) {
+    return res.status(503).json({ ok: false, error: "Panneau admin non configuré (ADMIN_PASSWORD manquant)." });
+  }
+  next();
+}
+
+function requireAdminAuth(req, res, next) {
+  const header = req.get('authorization') || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+  if (!token || !verifyToken(token)) {
+    return res.status(401).json({ ok: false, error: 'Session admin invalide ou expirée.' });
+  }
+  next();
+}
+
+const DOWNLOADABLE_EXT = { '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', '.csv': 'text/csv' };
+// Internal-only files never exposed through the admin panel (diagnostic round-trip key).
+const HIDDEN_NAMES = new Set(['_diagnostic-test.txt']);
+
+app.post('/api/admin/login', requireAdminConfigured, (req, res) => {
+  const password = (req.body || {}).password || '';
+  if (!safeEqual(password, ADMIN_PASSWORD)) {
+    return res.status(401).json({ ok: false, error: 'Mot de passe incorrect.' });
+  }
+  const expiresAt = Date.now() + TOKEN_TTL_MS;
+  res.json({ ok: true, token: signToken(expiresAt), expiresAt });
+});
+
+app.get('/api/admin/files', requireAdminConfigured, requireAdminAuth, async (req, res) => {
+  try {
+    let files;
+    if (blobStore.USE_BLOB) {
+      const blobs = await blobStore.listBlobs('data/');
+      files = blobs
+        .map((b) => ({ name: b.pathname.replace(/^data\//, ''), size: b.size, updatedAt: b.uploadedAt }))
+        .filter((f) => !HIDDEN_NAMES.has(f.name));
+    } else {
+      const fs = require('fs');
+      files = fs.existsSync(DATA_DIR)
+        ? fs.readdirSync(DATA_DIR)
+          .filter((name) => !HIDDEN_NAMES.has(name))
+          .map((name) => {
+            const stat = fs.statSync(path.join(DATA_DIR, name));
+            return { name, size: stat.size, updatedAt: stat.mtime.toISOString() };
+          })
+        : [];
+    }
+    files = files.filter((f) => DOWNLOADABLE_EXT[path.extname(f.name)]);
+    files.sort((a, b) => a.name.localeCompare(b.name));
+    res.json({ ok: true, files });
+  } catch (err) {
+    console.error('admin files list failed', err);
+    res.status(500).json({ ok: false, error: 'Impossible de lister les fichiers.' });
+  }
+});
+
+app.get('/api/admin/download/:name', requireAdminConfigured, requireAdminAuth, async (req, res) => {
+  const name = req.params.name;
+  // Reject anything but a bare filename (no path traversal) with an allowed extension.
+  if (!/^[a-zA-Z0-9_.-]+$/.test(name) || name.includes('..') || !DOWNLOADABLE_EXT[path.extname(name)]) {
+    return res.status(400).json({ ok: false, error: 'Nom de fichier invalide.' });
+  }
+  try {
+    let content;
+    if (blobStore.USE_BLOB) {
+      content = await blobStore.readBlob(`data/${name}`);
+    } else {
+      const fs = require('fs');
+      const filePath = path.join(DATA_DIR, name);
+      content = fs.existsSync(filePath) ? await fs.promises.readFile(filePath) : null;
+    }
+    if (!content) return res.status(404).json({ ok: false, error: 'Fichier introuvable.' });
+    res.setHeader('Content-Type', DOWNLOADABLE_EXT[path.extname(name)]);
+    res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+    res.send(content);
+  } catch (err) {
+    console.error('admin download failed', err);
+    res.status(500).json({ ok: false, error: 'Téléchargement impossible.' });
   }
 });
 

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Espace admin — Fun4Kids</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="./images/logo-fun4kids.jpeg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/style.css">
+<style>
+  .admin-wrap{max-width:760px;margin:0 auto;padding:64px 24px 96px}
+  .admin-card{background:#fff;border:1px solid var(--border);border-radius:24px;padding:32px;box-shadow:0 8px 24px rgba(46,42,39,0.08)}
+  #login-view input{width:100%;box-sizing:border-box;font-family:var(--font-body);font-size:16px;padding:12px 16px;border:2px solid var(--border-strong);border-radius:14px;margin:14px 0}
+  #login-error{color:#C0392B;font-size:14.5px;min-height:20px}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border)}
+  th{font-family:var(--font-title);color:var(--muted)}
+  tr:hover td{background:var(--orange-pale)}
+  .dl-btn{font-family:var(--font-title);font-weight:700;font-size:13.5px;background:var(--orange-soft);color:var(--orange);border:none;border-radius:999px;padding:7px 16px;cursor:pointer}
+  .dl-btn:hover{background:var(--orange);color:#fff}
+  .dl-btn:disabled{opacity:.5;cursor:wait}
+  .top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+  #logout-btn{background:none;border:2px solid var(--border-strong);border-radius:999px;padding:7px 16px;font-family:var(--font-title);font-weight:700;font-size:13.5px;cursor:pointer;color:var(--ink)}
+  #logout-btn:hover{border-color:var(--orange);color:var(--orange)}
+  #status-msg{font-size:14px;color:var(--muted-2)}
+  .cat-badge{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:var(--green-soft);color:var(--green-dark);margin-left:8px}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header__bar">
+    <a href="./index.html" class="site-header__logo"><img src="./images/logo-fun4kids.jpeg" alt="Fun4Kids"></a>
+    <span style="font-family:var(--font-title);font-weight:700;color:var(--ink)">Espace admin</span>
+  </div>
+</header>
+
+<div class="admin-wrap">
+
+  <div id="login-view" class="admin-card">
+    <h1 style="font-size:24px;margin-bottom:6px">Accès réservé</h1>
+    <p style="color:var(--muted);font-size:15px;margin:0">Entrez le mot de passe pour accéder aux fichiers d'inscription et de contact.</p>
+    <form id="login-form">
+      <input type="password" id="password" placeholder="Mot de passe" autocomplete="current-password" required>
+      <div id="login-error"></div>
+      <button type="submit" class="btn btn-primary btn-md">Se connecter</button>
+    </form>
+  </div>
+
+  <div id="files-view" class="admin-card" hidden>
+    <div class="top-row">
+      <div>
+        <h1 style="font-size:24px;margin-bottom:4px">Fichiers d'inscription</h1>
+        <span id="status-msg"></span>
+      </div>
+      <button id="logout-btn" type="button">Se déconnecter</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Fichier</th><th>Dernière mise à jour</th><th>Taille</th><th></th></tr></thead>
+        <tbody id="files-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var TOKEN_KEY = 'f4k_admin_token';
+  var loginView = document.getElementById('login-view');
+  var filesView = document.getElementById('files-view');
+  var loginForm = document.getElementById('login-form');
+  var loginError = document.getElementById('login-error');
+  var filesBody = document.getElementById('files-body');
+  var statusMsg = document.getElementById('status-msg');
+  var logoutBtn = document.getElementById('logout-btn');
+
+  var LABELS = {
+    'contact.xlsx': 'Formulaire de contact',
+    'academie.xlsx': 'Inscriptions — Académie de futsal',
+    'anniversaires.xlsx': 'Inscriptions — Anniversaires',
+    'sejour.xlsx': 'Inscriptions — Séjour',
+    'inscriptions-log.csv': 'Journal complet (audit, toutes activités)'
+  };
+
+  function labelFor(name) {
+    if (LABELS[name]) return LABELS[name];
+    if (/^stage-.*\.xlsx$/.test(name)) return 'Inscriptions — Stage (' + name.replace(/^stage-/, '').replace(/\.xlsx$/, '').replace(/-/g, ' ') + ')';
+    return name;
+  }
+
+  function getToken() {
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch (e) { return null; }
+  }
+  function setToken(t) {
+    try { sessionStorage.setItem(TOKEN_KEY, t); } catch (e) {}
+  }
+  function clearToken() {
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {}
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' o';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' Ko';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' Mo';
+  }
+  function formatDate(iso) {
+    try { return new Date(iso).toLocaleString('fr-BE'); } catch (e) { return iso; }
+  }
+
+  function showLogin(message) {
+    filesView.hidden = true;
+    loginView.hidden = false;
+    loginError.textContent = message || '';
+  }
+
+  function showFiles() {
+    loginView.hidden = true;
+    filesView.hidden = false;
+  }
+
+  async function loadFiles() {
+    statusMsg.textContent = 'Chargement…';
+    filesBody.innerHTML = '';
+    try {
+      const res = await fetch('/api/admin/files', { headers: { Authorization: 'Bearer ' + getToken() } });
+      if (res.status === 401) {
+        clearToken();
+        showLogin('Session expirée, reconnectez-vous.');
+        return;
+      }
+      const data = await res.json();
+      if (!data.ok) {
+        statusMsg.textContent = data.error || 'Erreur de chargement.';
+        return;
+      }
+      if (!data.files.length) {
+        statusMsg.textContent = 'Aucun fichier pour le moment — les fichiers apparaissent dès la première soumission de chaque formulaire.';
+        return;
+      }
+      statusMsg.textContent = data.files.length + ' fichier(s)';
+      data.files.forEach((f) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td>' + labelFor(f.name) + '<span class="cat-badge">' + f.name.split('.').pop().toUpperCase() + '</span></td>' +
+          '<td>' + formatDate(f.updatedAt) + '</td>' +
+          '<td>' + formatSize(f.size) + '</td>' +
+          '<td><button class="dl-btn" type="button">Télécharger</button></td>';
+        tr.querySelector('.dl-btn').addEventListener('click', (e) => downloadFile(f.name, e.currentTarget));
+        filesBody.appendChild(tr);
+      });
+    } catch (err) {
+      statusMsg.textContent = 'Erreur réseau.';
+    }
+  }
+
+  async function downloadFile(name, btn) {
+    btn.disabled = true;
+    btn.textContent = '…';
+    try {
+      const res = await fetch('/api/admin/download/' + encodeURIComponent(name), {
+        headers: { Authorization: 'Bearer ' + getToken() },
+      });
+      if (res.status === 401) {
+        clearToken();
+        showLogin('Session expirée, reconnectez-vous.');
+        return;
+      }
+      if (!res.ok) throw new Error('download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    } catch (err) {
+      alert('Téléchargement impossible.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Télécharger';
+    }
+  }
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginError.textContent = '';
+    const password = document.getElementById('password').value;
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        loginError.textContent = data.error || 'Connexion impossible.';
+        return;
+      }
+      setToken(data.token);
+      showFiles();
+      loadFiles();
+    } catch (err) {
+      loginError.textContent = 'Erreur réseau.';
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    clearToken();
+    showLogin('');
+  });
+
+  if (getToken()) {
+    showFiles();
+    loadFiles();
+  }
+})();
+</script>
+</body>
+</html>
