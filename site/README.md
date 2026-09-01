@@ -38,6 +38,38 @@ npm start
 # -> http://localhost:3000
 ```
 
+## Deploy on Vercel
+
+The site is deployed via `vercel.json` (routes every request through
+`api/index.js`, which just re-exports the Express app from `server.js`).
+
+**One manual step is required after the first deploy**, because Vercel's
+serverless functions have no writable disk that survives between requests:
+`data/*.csv` and `data/*.xlsx` are stored in **Vercel Blob** (private access)
+instead of on disk when running on Vercel — see `lib/blobStore.js`. Locally
+(`npm start`), nothing changes: it still writes to `site/data/` on disk.
+
+To enable it in production:
+1. In the Vercel dashboard, open the project → **Storage** tab → **Create
+   Database** → **Blob** (or `vercel blob create-store` via the CLI), and
+   connect it to this project. That step alone sets the `BLOB_READ_WRITE_TOKEN`
+   environment variable Vercel injects automatically — no code change needed.
+2. Redeploy (or just wait for the next request) — `lib/blobStore.js` detects
+   the token and switches from disk to Blob automatically.
+3. To read submissions afterwards: `vercel blob list` / `vercel blob get
+   data/contact.csv --output contact.csv` (repeat for the `.xlsx` rosters),
+   or fetch them programmatically with `@vercel/blob`'s `list()`/`get()`.
+
+Until step 1 is done, `/api/contact` and `/api/inscription` will still
+respond `200 OK` but their writes are effectively lost on redeploy/cold
+start — do this before sharing the live URL with real families.
+
+**Known limitation:** Blob mode reads the whole file, appends the new row in
+memory, and re-uploads the whole file (`allowOverwrite: true`) — there's no
+locking. Two submissions landing in the exact same instant could in theory
+clobber each other. Fine for Fun4Kids' actual volume; revisit with a real
+database if submissions ever get busy enough for that to matter.
+
 ## What's wired up
 
 - **Contact form** (`contact.html`) posts to `/api/contact`, which appends a

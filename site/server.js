@@ -41,7 +41,7 @@ const WRITERS = {
   sejour: (data) => xlsxRoster.appendSejourRow(DATA_DIR, data),
 };
 
-app.post('/api/contact', (req, res) => {
+app.post('/api/contact', async (req, res) => {
   const body = req.body || {};
   if (!body.nom || !body.email || !body.message) {
     return res.status(400).json({ ok: false, error: 'Champs requis manquants.' });
@@ -54,7 +54,7 @@ app.post('/api/contact', (req, res) => {
     message: body.message,
   };
   try {
-    appendRow(DATA_DIR, 'contact', CONTACT_COLUMNS, row);
+    await appendRow(DATA_DIR, 'contact', CONTACT_COLUMNS, row);
     res.json({ ok: true });
   } catch (err) {
     console.error('contact write failed', err);
@@ -82,7 +82,7 @@ app.post('/api/inscription', async (req, res) => {
     // allergies/medical info — which the printable roster above
     // deliberately omits since it's meant as a one-page attendance sheet,
     // not a place to leave sensitive medical notes lying around).
-    appendRow(DATA_DIR, 'inscriptions-log', LOG_COLUMNS, {
+    await appendRow(DATA_DIR, 'inscriptions-log', LOG_COLUMNS, {
       timestamp: new Date().toISOString(),
       activite,
       payload: JSON.stringify(body),
@@ -94,6 +94,14 @@ app.post('/api/inscription', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Fun4Kids site running at http://localhost:${PORT}`);
-});
+// Only bind a port when run directly (`node server.js` / `npm start`), e.g.
+// for local development. On Vercel this file is required as a module by
+// api/index.js and exported below instead — the platform's own Node.js
+// runtime handles incoming requests, so there is no port to listen on.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Fun4Kids site running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
