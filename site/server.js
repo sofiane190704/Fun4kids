@@ -20,6 +20,7 @@ const express = require('express');
 const { appendRow } = require('./lib/csv');
 const xlsxRoster = require('./lib/xlsx');
 const blobStore = require('./lib/blobStore');
+const payment = require('./lib/payment');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -99,6 +100,11 @@ app.post('/api/inscription', async (req, res) => {
     return res.status(400).json({ ok: false, error: `Champs manquants : ${missing.join(', ')}` });
   }
   try {
+    // Paiement par virement : référence unique + QR code (null tant que
+    // PAYMENT_IBAN n'est pas configuré sur Vercel).
+    const pay = await payment.buildPayment(activite, body);
+    body._paiement = payment.paymentCell(pay);
+    if (pay) body._paiement_ref = pay.reference;
     const filePath = await writer(body);
     // Full audit log (every submitted field, including notes_medicales —
     // allergies/medical info — which the printable roster above
@@ -109,7 +115,7 @@ app.post('/api/inscription', async (req, res) => {
       activite,
       payload: JSON.stringify(body),
     });
-    res.json({ ok: true, file: path.basename(filePath) });
+    res.json({ ok: true, file: path.basename(filePath), payment: pay });
   } catch (err) {
     console.error('inscription write failed', err);
     res.status(500).json({ ok: false, error: 'Écriture impossible.' });

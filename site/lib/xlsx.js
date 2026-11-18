@@ -8,9 +8,10 @@
 //    ANIMATEUR column left blank for manual group assignment — matching the
 //    ASBL's own "Listing présence" sheets.
 //  - Académie / Anniversaires / Séjour: one running roster per activity.
-//  - PAIEMENT is always left blank at registration time — staff fill it in
-//    once the bank transfer is received (per the site's own confirmation
-//    copy: no payment is collected online).
+//  - PAIEMENT is pre-filled with the amount due and the unique structured
+//    communication (+++xxx/xxxx/xxxxx+++) shown to the parent with the
+//    payment QR code (see lib/payment.js), so staff can match the bank
+//    transfer and mark it as paid by hand. Left blank if PAYMENT_IBAN is unset.
 //
 // Storage backend: local disk under dataDir by default, or Vercel Blob
 // (private) when BLOB_READ_WRITE_TOKEN is set — see lib/blobStore.js. In
@@ -129,7 +130,7 @@ async function appendStageRow(dataDir, weekLabel, weekSlug, data) {
     computeAge(data.child_naissance),
     data.parent_tel || '',
     data.parent_email || '',
-    '', // paiement — filled in by hand
+    data._paiement || '', // paiement — montant + communication structurée, statut coché à la main
     '', '', '', '', '', // L M M J V — ticked by hand
     '', // animateur — assigned by hand
   ];
@@ -148,7 +149,7 @@ async function appendAcademieRow(dataDir, data) {
     data.academie_categorie || '',
     data.academie_formule || '',
     data.academie_jour || '',
-    '',
+    data._paiement || '',
   ];
   return appendRow(key, 'Listing Académie de futsal', headers, values);
 }
@@ -164,7 +165,7 @@ async function appendAnnivRow(dataDir, data) {
     data.anniv_count || '',
     data.anniv_formule || '',
     data.anniv_theme || '',
-    '',
+    data._paiement || '',
   ];
   return appendRow(key, 'Listing Anniversaires', headers, values);
 }
@@ -180,7 +181,7 @@ async function appendSejourRow(dataDir, data) {
     data.parent_email || '',
     data.sejour_urgence_nom || '',
     data.sejour_urgence_tel || '',
-    '',
+    data._paiement || '',
   ];
   return appendRow(key, 'Listing Séjour — Lloret del Mar 2027', headers, values);
 }

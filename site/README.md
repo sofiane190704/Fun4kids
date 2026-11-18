@@ -152,6 +152,32 @@ than falsely claiming an e-mail was already sent. Wiring up an actual
 mail step (SMTP, or a transactional-email provider) is a follow-up task
 once credentials/a provider are chosen.
 
+## Paiement par virement (QR code)
+
+À la fin de l'inscription, l'écran de confirmation affiche le bénéficiaire,
+l'IBAN, le montant, une **communication structurée unique**
+(`+++123/4567/89012+++`, contrôle modulo 97) et un **QR code de paiement
+EPC/SEPA** : le parent le scanne avec son app bancaire (KBC, Belfius, BNP,
+ING…), montant et communication sont pré-remplis. Le montant est recalculé
+côté serveur (`lib/payment.js`), avec la même grille que le site.
+
+La colonne PAIEMENT des listings Excel est pré-remplie avec
+`À recevoir <montant> · <communication>` : il suffit de chercher la
+communication sur l'extrait de compte et de cocher « payé ».
+
+**À configurer une fois** (Vercel → Settings → Environment Variables,
+Production) puis redéployer :
+- `PAYMENT_IBAN` — IBAN de l'ASBL (obligatoire ; sans lui, le bloc paiement
+  ne s'affiche pas et l'ancien message reste en place)
+- `PAYMENT_BENEFICIARY` — optionnel, par défaut `Fun4Kids ASBL`
+- `PAYMENT_BIC` — optionnel
+
+Les séances spécifiques / gardien de l'Académie n'ont pas de prix fixe :
+la communication est affichée, sans montant ni QR code.
+
+L'inscription envoie aussi un événement Google Analytics `generate_lead`
+(activité + montant), uniquement si le visiteur a accepté les cookies.
+
 ## Images
 
 All photos on the site were extracted from the design's
