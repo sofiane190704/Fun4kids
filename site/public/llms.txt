@@ -1,0 +1,28 @@
+# Fun4Kids ASBL
+
+> Fun4Kids ASBL est une association sans but lucratif de droit belge, basée à Enghien (Belgique), qui organise des activités sportives et créatives pour les enfants : stages de vacances, académie de futsal (Fun Futsal Academy), anniversaires sportifs, et un séjour sportif à l'étranger pour les adolescents.
+
+Siège social : 17 Place du Vieux Marché, 7850 Enghien, Belgique.
+Contact : info@fun4kidsasbl.be — +32 477 99 58 33.
+Inscriptions en ligne, paiement par virement bancaire (pas de paiement en ligne par carte).
+
+## Activités
+
+- [Académie de futsal](https://funforkidsasbl.com/academie.html) : entraînements de futsal toute l'année, dès 2 ans, au Nautisport (Pavé de Soignies 36, 7850 Enghien). Tarifs : 290 €/saison (1 séance/semaine) ou 390 € (2 séances/semaine).
+- [Stages](https://funforkidsasbl.com/stages.html) : semaines multisports et créatives pendant les congés scolaires, de 2,5 à 12 ans, à l'Institut Albert 1er. Garderie 7h15-9h et 16h-18h incluse. Tarifs : 85 € (2,5-5 ans) ou 100 € (6-12 ans) pour les semaines standards ; 75 €/90 € pour la Semaine givrée de Noël (plus courte, 3 jours).
+- [Anniversaires](https://funforkidsasbl.com/anniversaires.html) : fêtes d'anniversaire sportives clé en main, 14 €/enfant (10 enfants minimum).
+- [Séjour sportif](https://funforkidsasbl.com/sejour.html) : séjour de futsal à Lloret del Mar (Espagne), pour les 10-17 ans, 750 € tout compris.
+- Un tarif famille de -10% s'applique automatiquement dès le deuxième enfant d'un même responsable inscrit à l'académie ou à un stage (pas aux anniversaires ni au séjour).
+
+## Pages utiles
+
+- [Accueil](https://funforkidsasbl.com/) — présentation générale et FAQ
+- [Contact](https://funforkidsasbl.com/contact.html) — formulaire, FAQ, localisation
+- [Inscription en ligne](https://funforkidsasbl.com/inscription.html)
+- [Politique de confidentialité](https://funforkidsasbl.com/vie-privee.html)
+- [Mentions légales](https://funforkidsasbl.com/mentions-legales.html)
+
+## À noter
+
+- Les inscriptions se valident par virement bancaire (communication fournie après la demande en ligne), pas par carte bancaire.
+- /admin.html est un panneau d'administration interne protégé par mot de passe — pas une page de contenu public, à ne pas indexer ni citer.

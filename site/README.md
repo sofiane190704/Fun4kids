@@ -231,8 +231,31 @@ plein en le rapprochant du virement reçu.
 L'inscription envoie aussi un événement Google Analytics `generate_lead`
 (activité + montant), uniquement si le visiteur a accepté les cookies.
 
-L'inscription envoie aussi un événement Google Analytics `generate_lead`
-(activité + montant), uniquement si le visiteur a accepté les cookies.
+## SEO & GEO (référencement classique + moteurs génératifs)
+
+En plus du balisage de base (canonical, Open Graph, sitemap, robots.txt —
+voir les commits précédents) :
+
+- **Données structurées FAQ** (`FAQPage`) sur `index.html` et `contact.html`,
+  dupliquant exactement le contenu visible des accordéons — jamais de texte
+  différent entre ce que Google lit et ce que l'utilisateur voit.
+- **Géolocalisation** (`geo.GeoCoordinates`) ajoutée au `LocalBusiness` du
+  siège social (index.html, contact.html).
+- **Adresse corrigée** sur `academie.html` : le balisage `SportsActivityLocation`
+  donnait l'adresse de l'Institut Albert 1er alors que l'académie se déroule
+  réellement au Nautisport (Pavé de Soignies 36) — corrigé pour correspondre
+  au texte visible de la page.
+- **`public/llms.txt`** : résumé structuré du site (activités, tarifs,
+  pages clés) destiné aux moteurs génératifs (ChatGPT, Perplexity, Google
+  AI Overviews...) — convention volontaire, pas un standard officiel, mais
+  peu coûteuse et de plus en plus suivie.
+- Les FAQ elles-mêmes ont été corrigées en même temps : `index.html` et
+  `contact.html` se contredisaient sur les horaires de garderie et l'âge
+  minimum par activité, et décrivaient encore un paiement en ligne avec
+  confirmation automatique par e-mail (obsolète depuis le virement
+  bancaire). Un balisage FAQ sur un contenu inexact aurait activement nui
+  au référencement génératif — une IA citant le site aurait pu reprendre
+  des informations fausses.
 
 ## Images
 
