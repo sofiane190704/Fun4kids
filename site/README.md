@@ -141,16 +141,43 @@ password or token is ever stored server-side beyond the env var itself.
   `inscription.html?activite=stage&semaine=halloween-1` pre-selects the
   activity (and week, for stages).
 
-## Deliberately **not** wired up: outbound e-mail
+## Notification par e-mail à l'ASBL (nouvelle inscription / contact)
 
-The design's copy promises an automatic confirmation e-mail (with bank
-transfer details) as soon as a request is submitted. No mail service or
-credentials were provided, so this build does **not** send real e-mails —
-it only records submissions to the CSV files above, and the confirmation
-screen text was adjusted to say the Fun4Kids team will follow up, rather
-than falsely claiming an e-mail was already sent. Wiring up an actual
-mail step (SMTP, or a transactional-email provider) is a follow-up task
-once credentials/a provider are chosen.
+À chaque inscription et à chaque message de contact, un e-mail récapitulatif
+est envoyé à l'ASBL (`lib/mail.js`), via l'API HTTP de
+[Resend](https://resend.com) — pas de SDK, un simple `fetch`. L'e-mail
+contient les informations utiles pour réagir vite (activité, enfant,
+coordonnées du responsable, montant/référence de paiement le cas échéant)
+mais **jamais** les informations médicales (`notes_medicales`) : comme pour
+le listing Excel imprimable, celles-ci restent uniquement dans le panneau
+admin protégé par mot de passe.
+
+**À configurer une fois** (Vercel → Settings → Environment Variables,
+Production **et** Preview) puis redéployer :
+- `RESEND_API_KEY` — clé API d'un compte [resend.com](https://resend.com)
+  (gratuit jusqu'à 3000 e-mails/mois). Obligatoire ; sans elle, aucun
+  e-mail n'est envoyé, silencieusement — rien n'est bloqué pour autant.
+- `MAIL_TO` — l'adresse de l'ASBL qui doit recevoir ces notifications
+  (ex. `info@fun4kidsasbl.be`). Obligatoire elle aussi.
+- `MAIL_FROM` — optionnel, par défaut `Fun4Kids <onboarding@resend.dev>`.
+  Cette adresse de test Resend ne peut envoyer qu'**à l'adresse du compte
+  Resend lui-même** tant qu'aucun domaine n'est vérifié. Pour envoyer
+  depuis une adresse `@funforkidsasbl.com` vers n'importe quelle boîte
+  (notamment `info@fun4kidsasbl.be`), vérifiez le domaine dans
+  Resend → Domains (ajout de quelques enregistrements DNS chez votre
+  registrar), puis réglez `MAIL_FROM` sur, par exemple,
+  `Fun4Kids <inscriptions@funforkidsasbl.com>`.
+
+Un échec d'envoi (clé invalide, Resend indisponible, domaine non
+vérifié...) est uniquement loggé côté serveur — l'inscription ou le
+message, eux, sont déjà enregistrés avant que l'e-mail ne soit tenté et ne
+sont jamais perdus.
+
+**Toujours pas prévu** : un e-mail de confirmation envoyé *au parent* avec
+les informations bancaires, comme le suggère le texte initial du design.
+C'est une fonctionnalité séparée (et plus sensible, puisqu'elle écrirait à
+des familles) — la confirmation à l'écran reste donc le seul retour
+immédiat pour le parent ; c'est l'ASBL qui est notifiée ici.
 
 ## Paiement par virement (QR code)
 
