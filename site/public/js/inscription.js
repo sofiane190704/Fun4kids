@@ -209,11 +209,14 @@
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('request failed');
+      const result = await res.json().catch(() => ({}));
 
       setText('[data-done="email"]', data.parent_email || 'vous');
       setText('[data-done="activite"]', LABELS[activity] || '—');
       setText('[data-done="option"]', recapOption(activity, data));
       setText('[data-done="price"]', p.price);
+      showPayment(result.payment, data);
+      trackInscription(activity, result.payment);
       goToStep('done');
     } catch (err) {
       setStatus(status, "Une erreur est survenue lors de l'envoi. Réessayez, ou appelez-nous au 0477 / 99.58.33.", false, true);
@@ -221,6 +224,42 @@
       btn.disabled = false;
       btn.textContent = original;
     }
+  }
+
+  // Bloc paiement de l'écran de confirmation (QR code EPC + communication
+  // structurée). Si le serveur ne renvoie rien (IBAN non configuré), on garde
+  // le message d'origine.
+  function showPayment(pay, data) {
+    const box = document.querySelector('[data-payment]');
+    if (!box) return;
+    if (!pay) { box.style.display = 'none'; return; }
+    setText('[data-pay="beneficiary"]', pay.beneficiary);
+    setText('[data-pay="iban"]', pay.iban);
+    setText('[data-pay="amount"]', pay.amount || 'communiqué par l\'équipe');
+    setText('[data-pay="reference"]', pay.reference);
+    const img = document.querySelector('[data-pay="qr"]');
+    const hint = document.querySelector('[data-pay="qr-hint"]');
+    if (img) { img.src = pay.qr || ''; img.style.display = pay.qr ? '' : 'none'; }
+    if (hint) hint.style.display = pay.qr ? '' : 'none';
+    const intro = document.querySelector('[data-done-intro]');
+    if (intro) {
+      intro.innerHTML = 'Votre demande a été enregistrée. Pour réserver définitivement la place, effectuez le virement ci-dessous. Dès réception, l\'équipe Fun4Kids vous confirme l\'inscription par e-mail.';
+    }
+    const copyBtn = document.querySelector('[data-pay-copy]');
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        if (navigator.clipboard) navigator.clipboard.writeText(pay.reference).then(() => { copyBtn.textContent = 'Copié ✓'; });
+      };
+    }
+    box.style.display = 'flex';
+  }
+
+  // Événement Google Analytics (uniquement si le visiteur a accepté les cookies).
+  function trackInscription(activity, pay) {
+    if (typeof window.gtag !== 'function') return;
+    const params = { activite: activity, currency: 'EUR' };
+    if (pay && pay.amountCents != null) params.value = pay.amountCents / 100;
+    window.gtag('event', 'generate_lead', params);
   }
 
   function setStatus(el, text, ok, visible) {

@@ -22,6 +22,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./css/style.css">
+  <!-- Vercel Web Analytics : mesure d'audience sans cookie (pas de consentement requis) -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
@@ -270,10 +275,10 @@
         <span style="width:40px;height:40px;border-radius:14px;background:var(--green-soft);color:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:19px">✉</span>
         <h2 style="font-size:26px">Dernière étape</h2>
       </div>
-      <p style="font-size:16.5px;line-height:1.7;color:var(--muted)">Vérifiez le récapitulatif, puis envoyez votre demande. L'équipe Fun4Kids vous recontactera par e-mail avec les <strong>informations bancaires</strong> (montant, numéro de compte et communication) à utiliser pour valider définitivement l'inscription.</p>
+      <p style="font-size:16.5px;line-height:1.7;color:var(--muted)">Vérifiez le récapitulatif, puis envoyez votre demande. Les <strong>informations de virement</strong> (montant, référence de paiement et QR code) s'affichent juste après l'envoi, sur cette même page.</p>
       <div style="background:var(--cream);border-radius:22px;padding:20px 22px;display:flex;flex-direction:column;gap:12px">
         <div style="display:flex;gap:12px;align-items:flex-start"><span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">1</span><span style="font-size:16px;line-height:1.55;color:var(--ink-soft)">Vous envoyez la demande d'inscription</span></div>
-        <div style="display:flex;gap:12px;align-items:flex-start"><span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">2</span><span style="font-size:16px;line-height:1.55;color:var(--ink-soft)">L'équipe Fun4Kids vous recontacte par e-mail avec les informations bancaires</span></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">2</span><span style="font-size:16px;line-height:1.55;color:var(--ink-soft)">Vous réglez par virement avec la référence indiquée</span></div>
         <div style="display:flex;gap:12px;align-items:flex-start"><span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">3</span><span style="font-size:16px;line-height:1.55;color:var(--ink-soft)">Le virement reçu, la place est définitivement réservée</span></div>
       </div>
       <div id="inscription-status" class="form-status" role="status"></div>
@@ -288,11 +293,25 @@
   <div style="background:var(--cream);border-radius:40px;padding:56px 48px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px">
     <span style="width:86px;height:86px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:40px">✓</span>
     <h2 style="font-size:38px;line-height:1.15">Demande bien reçue !</h2>
-    <p style="font-size:18.5px;line-height:1.7;color:var(--muted);max-width:560px">Votre demande a été enregistrée. L'équipe Fun4Kids va revenir vers <strong data-done="email">vous</strong> par e-mail avec le récapitulatif et les <strong>informations bancaires</strong> à utiliser pour valider la demande. Dès réception du virement, la place est définitivement réservée.</p>
+    <p style="font-size:18.5px;line-height:1.7;color:var(--muted);max-width:560px" data-done-intro>Votre demande a été enregistrée. L'équipe Fun4Kids va revenir vers <strong data-done="email">vous</strong> par e-mail avec le récapitulatif et les <strong>informations bancaires</strong> à utiliser pour valider la demande. Dès réception du virement, la place est définitivement réservée.</p>
     <div style="background:#fff;border-radius:24px;padding:22px 26px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:480px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><span style="font-size:15.5px;color:var(--muted-2)">Activité</span><span style="font-family:'Baloo 2';font-weight:700;font-size:17px" data-done="activite">—</span></div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><span style="font-size:15.5px;color:var(--muted-2)">Formule / date</span><span style="font-family:'Baloo 2';font-weight:700;font-size:17px;text-align:right" data-done="option">—</span></div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><span style="font-size:15.5px;color:var(--muted-2)">Montant à verser</span><span style="font-family:'Baloo 2';font-weight:700;font-size:17px;color:var(--orange)" data-done="price">—</span></div>
+    </div>
+    <!-- Paiement par virement (rempli par js/inscription.js quand le serveur renvoie les infos bancaires) -->
+    <div data-payment style="display:none;background:#fff;border-radius:24px;padding:24px 26px;width:100%;max-width:480px;flex-direction:column;align-items:center;gap:14px;text-align:left">
+      <h3 style="font-size:22px;text-align:center">Réglez par virement pour confirmer la place</h3>
+      <img data-pay="qr" alt="QR code de paiement" width="200" height="200" style="display:none;border-radius:12px">
+      <span data-pay="qr-hint" style="display:none;font-size:14px;color:var(--muted-2);text-align:center">Scannez ce code avec votre application bancaire : montant et communication sont remplis automatiquement.</span>
+      <div style="display:flex;flex-direction:column;gap:10px;width:100%">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px"><span style="font-size:15.5px;color:var(--muted-2)">Bénéficiaire</span><span style="font-weight:700" data-pay="beneficiary">—</span></div>
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px"><span style="font-size:15.5px;color:var(--muted-2)">IBAN</span><span style="font-weight:700;font-family:monospace;font-size:15px;word-break:break-all" data-pay="iban">—</span></div>
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px"><span style="font-size:15.5px;color:var(--muted-2)">Montant</span><span style="font-weight:700;color:var(--orange)" data-pay="amount">—</span></div>
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px;align-items:center"><span style="font-size:15.5px;color:var(--muted-2)">Communication</span><span style="font-weight:700;font-family:monospace;font-size:15px;overflow-wrap:break-word" data-pay="reference">—</span></div>
+      </div>
+      <button type="button" class="btn btn-outline" data-pay-copy style="font-size:15px;padding:8px 18px">Copier la communication</button>
+      <span style="font-size:13.5px;color:var(--muted-2);text-align:center">Merci d'indiquer exactement cette communication : elle nous permet d'associer votre virement à l'inscription.</span>
     </div>
     <p style="font-size:16px;line-height:1.65;color:var(--muted)">Une question en attendant ? Appelez-nous au 0477 / 99.58.33.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:6px">

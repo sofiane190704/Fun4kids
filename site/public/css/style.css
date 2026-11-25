@@ -516,3 +516,15 @@ section { position: relative; }
      overriding an inline style from an external stylesheet. */
   .split-2col { grid-template-columns: 1fr !important; gap: 28px !important; }
 }
+
+@media (max-width: 480px) {
+  /* .stepper__row is a plain flex row with justify-content:space-between
+     and no wrapping — on a real phone (tested at 390px) the three step
+     labels ("Activité", "Formulaire", "Confirmation") plus their 38px
+     circles don't fit the available width, and the last step is pushed
+     off-screen. Hiding the labels below this width keeps the numbered
+     circles + progress bar (which already convey the current step)
+     without the row ever overflowing, regardless of label length/language. */
+  .stepper__label { display: none; }
+  .stepper__row { justify-content: center; gap: 28px; }
+}

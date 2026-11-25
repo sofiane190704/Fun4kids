@@ -10,9 +10,10 @@
 // below) lets the ASBL team list and download those files at any time —
 // see README.md for how to set ADMIN_PASSWORD.
 //
-// No outbound email is configured (no SMTP credentials were provided) —
-// submissions land in the files below and the ASBL team follows up
-// manually. See README.md for details.
+// The ASBL team is also notified by e-mail (lib/mail.js, via Resend) on
+// every new inscription and contact message — see README.md for how to
+// set RESEND_API_KEY/MAIL_TO. A failed or unconfigured e-mail send never
+// blocks the submission itself, which is already safely recorded first.
 
 const path = require('path');
 const crypto = require('crypto');
@@ -20,6 +21,8 @@ const express = require('express');
 const { appendRow } = require('./lib/csv');
 const xlsxRoster = require('./lib/xlsx');
 const blobStore = require('./lib/blobStore');
+const payment = require('./lib/payment');
+const mail = require('./lib/mail');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -77,6 +80,14 @@ app.post('/api/contact', async (req, res) => {
   }
   try {
     await xlsxRoster.appendContactRow(DATA_DIR, body);
+    // Le message est déjà enregistré ci-dessus quoi qu'il arrive ensuite —
+    // une notification par e-mail ratée (ou non configurée) ne doit jamais
+    // faire échouer la requête, d'où le try/catch séparé.
+    try {
+      await mail.notifyContact(body);
+    } catch (err) {
+      console.error('contact notification failed', err);
+    }
     res.json({ ok: true });
   } catch (err) {
     console.error('contact write failed', err);
@@ -99,6 +110,11 @@ app.post('/api/inscription', async (req, res) => {
     return res.status(400).json({ ok: false, error: `Champs manquants : ${missing.join(', ')}` });
   }
   try {
+    // Paiement par virement : référence unique + QR code (null tant que
+    // PAYMENT_IBAN n'est pas configuré sur Vercel).
+    const pay = await payment.buildPayment(activite, body);
+    body._paiement = payment.paymentCell(pay);
+    if (pay) body._paiement_ref = pay.reference;
     const filePath = await writer(body);
     // Full audit log (every submitted field, including notes_medicales —
     // allergies/medical info — which the printable roster above
@@ -109,7 +125,15 @@ app.post('/api/inscription', async (req, res) => {
       activite,
       payload: JSON.stringify(body),
     });
-    res.json({ ok: true, file: path.basename(filePath) });
+    // L'inscription est déjà enregistrée ci-dessus quoi qu'il arrive
+    // ensuite — une notification par e-mail ratée (ou non configurée) ne
+    // doit jamais faire échouer la requête, d'où le try/catch séparé.
+    try {
+      await mail.notifyInscription(activite, body, pay);
+    } catch (err) {
+      console.error('inscription notification failed', err);
+    }
+    res.json({ ok: true, file: path.basename(filePath), payment: pay });
   } catch (err) {
     console.error('inscription write failed', err);
     res.status(500).json({ ok: false, error: 'Écriture impossible.' });
