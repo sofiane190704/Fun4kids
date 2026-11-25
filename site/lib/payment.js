@@ -1,6 +1,15 @@
-// Paiement par virement : montant calculé côté serveur, communication
-// structurée belge (+++123/4567/89012+++) unique par inscription et QR code
-// EPC (« QR de paiement SEPA ») que le parent scanne avec son app bancaire.
+// Paiement par virement : montant calculé côté serveur, référence de
+// paiement lisible (++NOM PRENOM-ACTIVITE++, à partir du nom de l'enfant)
+// et QR code EPC (« QR de paiement SEPA ») que le parent scanne avec son
+// app bancaire.
+//
+// Ce format a été choisi volontairement au détriment de la communication
+// structurée belge classique (+++xxx/xxxx/xxxxx+++, contrôle modulo 97) :
+// plus simple à reconnaître à l'œil sur un extrait de compte, mais SANS
+// garantie d'unicité — deux inscriptions pour le même enfant à la même
+// activité (ou deux enfants homonymes) partageront la même référence. Si ce
+// cas se présente en pratique, l'équipe devra s'appuyer sur le montant et
+// la date du virement en plus de la référence pour les distinguer.
 //
 // L'IBAN n'est jamais écrit dans le code : il est lu dans la variable
 // d'environnement PAYMENT_IBAN (Vercel → Settings → Environment Variables).
@@ -8,7 +17,6 @@
 // garde l'ancien message (« l'équipe revient vers vous avec les infos
 // bancaires »).
 
-const crypto = require('crypto');
 const QRCode = require('qrcode');
 
 const BENEFICIARY = process.env.PAYMENT_BENEFICIARY || 'Fun4Kids ASBL';
@@ -75,13 +83,33 @@ function computeAmountCents(activity, rawData) {
   return null;
 }
 
-/** Communication structurée : 10 chiffres + 2 chiffres de contrôle (modulo 97). */
-function generateStructuredRef() {
-  const base = String(crypto.randomInt(0, 1e10)).padStart(10, '0');
-  let check = Number(BigInt(base) % 97n);
-  if (check === 0) check = 97;
-  const digits = base + String(check).padStart(2, '0');
-  return `+++${digits.slice(0, 3)}/${digits.slice(3, 7)}/${digits.slice(7)}+++`;
+const ACTIVITY_LABELS = {
+  academie: 'ACADEMIE',
+  anniv: 'ANNIVERSAIRE',
+  stage: 'STAGE',
+  sejour: 'SEJOUR',
+};
+
+/** Majuscules, sans accents, sans ponctuation — pour rester simple à
+ *  recopier à la main et sûr à placer dans le champ texte libre du QR. */
+function sanitizeForReference(text) {
+  return String(text || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // strip accents
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, '')
+    .trim();
+}
+
+/** Référence lisible : ++NOM PRENOM-ACTIVITE++, construite à partir du nom
+ *  de l'enfant (ou, pour l'anniversaire où il n'y a pas d'enfant identifié,
+ *  du responsable). Voir la note d'en-tête de fichier sur l'absence de
+ *  garantie d'unicité — choix assumé pour la simplicité. */
+function generateReadableReference(activity, data) {
+  const nom = sanitizeForReference(data.child_nom || data.parent_nom || '');
+  const prenom = sanitizeForReference(data.child_prenom || '');
+  const name = [nom, prenom].filter(Boolean).join(' ') || 'INSCRIPTION';
+  const label = ACTIVITY_LABELS[activity] || sanitizeForReference(activity) || 'ACTIVITE';
+  return `++${name}-${label}++`;
 }
 
 function formatEuros(cents) {
@@ -92,9 +120,9 @@ function formatIban(iban) {
   return iban.replace(/(.{4})/g, '$1 ').trim();
 }
 
-/** Contenu EPC069-12 (version 002, UTF-8). La communication structurée est
- *  placée dans le champ « texte libre », que les apps bancaires belges
- *  reconnaissent et reprennent telle quelle. */
+/** Contenu EPC069-12 (version 002, UTF-8). La référence est placée dans le
+ *  champ « texte libre » (remittance information non structurée), que les
+ *  apps bancaires belges reconnaissent et reprennent telle quelle. */
 function epcPayload(cents, ref) {
   return [
     'BCD', '002', '1', 'SCT',
@@ -110,7 +138,7 @@ function epcPayload(cents, ref) {
 async function buildPayment(activity, data) {
   if (!IBAN) return null;
   const cents = computeAmountCents(activity, data);
-  const reference = generateStructuredRef();
+  const reference = generateReadableReference(activity, data);
   const payment = {
     beneficiary: BENEFICIARY,
     iban: formatIban(IBAN),
@@ -132,4 +160,4 @@ function paymentCell(payment) {
   return `À recevoir${payment.amount ? ' ' + payment.amount : ''} · ${payment.reference}`;
 }
 
-module.exports = { buildPayment, paymentCell, computeAmountCents, generateStructuredRef, epcPayload, isValidIban };
+module.exports = { buildPayment, paymentCell, computeAmountCents, generateReadableReference, epcPayload, isValidIban };

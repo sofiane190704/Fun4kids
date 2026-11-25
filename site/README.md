@@ -155,11 +155,20 @@ once credentials/a provider are chosen.
 ## Paiement par virement (QR code)
 
 À la fin de l'inscription, l'écran de confirmation affiche le bénéficiaire,
-l'IBAN, le montant, une **communication structurée unique**
-(`+++123/4567/89012+++`, contrôle modulo 97) et un **QR code de paiement
-EPC/SEPA** : le parent le scanne avec son app bancaire (KBC, Belfius, BNP,
-ING…), montant et communication sont pré-remplis. Le montant est recalculé
-côté serveur (`lib/payment.js`), avec la même grille que le site.
+l'IBAN, le montant, une **référence de paiement lisible**
+(`++NOM PRENOM-ACTIVITE++`, à partir du nom de l'enfant — du responsable
+pour un anniversaire, où aucun enfant n'est identifié individuellement) et
+un **QR code de paiement EPC/SEPA** : le parent le scanne avec son app
+bancaire (KBC, Belfius, BNP, ING…), montant et référence sont pré-remplis.
+Le montant est recalculé côté serveur (`lib/payment.js`), avec la même
+grille que le site.
+
+Ce format a été préféré à la communication structurée belge classique
+(`+++xxx/xxxx/xxxxx+++`, contrôle modulo 97) pour rester simple à
+reconnaître à l'œil sur un extrait de compte — au prix d'une absence de
+garantie d'unicité : deux inscriptions pour le même enfant à la même
+activité partageront la même référence (voir `lib/payment.js` pour le
+détail de ce choix).
 
 La colonne PAIEMENT des listings Excel est pré-remplie avec
 `À recevoir <montant> · <communication>` : il suffit de chercher la
