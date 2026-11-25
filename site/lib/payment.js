@@ -11,13 +11,55 @@
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 
-const IBAN = (process.env.PAYMENT_IBAN || '').replace(/\s+/g, '').toUpperCase();
 const BENEFICIARY = process.env.PAYMENT_BENEFICIARY || 'Fun4Kids ASBL';
 const BIC = (process.env.PAYMENT_BIC || '').replace(/\s+/g, '').toUpperCase();
 
+// Longueur IBAN attendue pour quelques pays courants (ISO 13616). Sert
+// uniquement de garde-fou supplémentaire — la vraie validation est la clé
+// de contrôle modulo 97 ci-dessous, qui marche pour n'importe quel pays.
+const IBAN_LENGTH_BY_COUNTRY = { BE: 16, FR: 27, NL: 18, DE: 22, LU: 20 };
+
+/** Validation de forme + clé de contrôle (norme ISO 7064 MOD 97-10) d'un
+ *  IBAN. Ne révèle jamais l'IBAN lui-même à l'appelant : renvoie seulement
+ *  un booléen. */
+function isValidIban(iban) {
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+  const country = iban.slice(0, 2);
+  const expectedLength = IBAN_LENGTH_BY_COUNTRY[country];
+  if (expectedLength && iban.length !== expectedLength) return false;
+  // Déplace les 4 premiers caractères à la fin, puis convertit chaque
+  // lettre en nombre (A=10 … Z=35) avant de calculer le modulo 97.
+  const rearranged = iban.slice(4) + iban.slice(0, 4);
+  const numeric = rearranged.replace(/[A-Z]/g, (c) => String(c.charCodeAt(0) - 55));
+  try {
+    return BigInt(numeric) % 97n === 1n;
+  } catch (err) {
+    return false; // ne devrait pas arriver vu la regex ci-dessus, mais jamais planter sur un IBAN malformé
+  }
+}
+
+const IBAN_RAW = (process.env.PAYMENT_IBAN || '').replace(/\s+/g, '').toUpperCase();
+let IBAN = IBAN_RAW;
+if (IBAN_RAW && !isValidIban(IBAN_RAW)) {
+  console.warn('[payment] PAYMENT_IBAN est défini mais invalide (format ou clé de contrôle modulo 97 incorrecte) — paiement par virement désactivé. Vérifiez la valeur dans les Environment Variables Vercel.');
+  IBAN = '';
+}
+
+// Le navigateur envoie aussi `montant`/`montant_note` (texte affiché dans le
+// récapitulatif avant même la réponse du serveur), mais ces champs ne sont
+// JAMAIS lus ici : le montant réel est systématiquement recalculé côté
+// serveur à partir des champs structurels de l'activité (catégorie,
+// formule, nombre d'enfants…). On les retire explicitement du payload avant
+// tout calcul, pour qu'un futur champ du même nom ne puisse pas s'y glisser
+// par erreur.
+const CLIENT_ONLY_FIELDS = ['montant', 'montant_note'];
+
 /** Montant en centimes, même grille que public/js/inscription.js.
  *  Renvoie null quand le prix n'est pas fixe (séances spécifiques/gardien). */
-function computeAmountCents(activity, data) {
+function computeAmountCents(activity, rawData) {
+  const data = { ...rawData };
+  for (const field of CLIENT_ONLY_FIELDS) delete data[field];
+
   if (activity === 'academie') {
     const cat = data.academie_categorie || '';
     const formule = data.academie_formule || '';
@@ -90,4 +132,4 @@ function paymentCell(payment) {
   return `À recevoir${payment.amount ? ' ' + payment.amount : ''} · ${payment.reference}`;
 }
 
-module.exports = { buildPayment, paymentCell, computeAmountCents, generateStructuredRef, epcPayload };
+module.exports = { buildPayment, paymentCell, computeAmountCents, generateStructuredRef, epcPayload, isValidIban };

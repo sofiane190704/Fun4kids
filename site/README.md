@@ -168,7 +168,10 @@ communication sur l'extrait de compte et de cocher « payé ».
 **À configurer une fois** (Vercel → Settings → Environment Variables,
 Production) puis redéployer :
 - `PAYMENT_IBAN` — IBAN de l'ASBL (obligatoire ; sans lui, le bloc paiement
-  ne s'affiche pas et l'ancien message reste en place)
+  ne s'affiche pas et l'ancien message reste en place). Vérifié au
+  démarrage (format + clé de contrôle modulo 97) : si la valeur est
+  invalide, le paiement est désactivé automatiquement et un avertissement
+  clair est écrit dans les logs serveur — sans jamais y afficher l'IBAN.
 - `PAYMENT_BENEFICIARY` — optionnel, par défaut `Fun4Kids ASBL`
 - `PAYMENT_BIC` — optionnel
 
