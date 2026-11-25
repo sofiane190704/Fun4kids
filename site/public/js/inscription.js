@@ -14,6 +14,15 @@
   const STAGE_WEEK_SLUGS = Object.fromEntries(
     Object.entries(SEMAINE_PARAM_MAP).map(([slug, label]) => [label, slug])
   );
+  // Prix par semaine (voir stages.html) — la Semaine givrée (3 jours) coûte
+  // moins cher que les semaines de 5 jours d'Halloween. Même table que
+  // lib/payment.js ; le serveur recalcule de toute façon le montant final.
+  const STAGE_PRICES = {
+    'halloween-1': { young: '85 €', old: '100 €' },
+    'halloween-2': { young: '85 €', old: '100 €' },
+    'noel': { young: '75 €', old: '90 €' },
+    default: { young: '85 €', old: '100 €' },
+  };
 
   let state = { step: 1, activity: null };
 
@@ -118,8 +127,8 @@
       const cat = data.academie_categorie || '';
       const formule = data.academie_formule || '';
       if (/spécifique|gardien/i.test(cat)) return { price: 'dès 10 €', note: 'par séance réservée' };
-      if (/^2 /.test(formule)) return { price: '390 €', note: '2 séances / semaine — saison complète' };
-      return { price: '290 €', note: '1 séance / semaine — saison complète' };
+      if (/^2 /.test(formule)) return { price: '390 €', note: '2 séances / semaine — saison complète · -10% dès le 2e enfant' };
+      return { price: '290 €', note: '1 séance / semaine — saison complète · -10% dès le 2e enfant' };
     }
     if (activity === 'anniv') {
       const n = parseInt(data.anniv_count, 10);
@@ -127,7 +136,11 @@
       return { price: '140 €', note: '10 enfants minimum × 14 €' };
     }
     if (activity === 'stage') {
-      return /6 – 12/.test(data.stage_age || '') ? { price: '100 €', note: '6 – 12 ans, garderie incluse' } : { price: '85 €', note: '2,5 – 5 ans, garderie incluse' };
+      const slug = STAGE_WEEK_SLUGS[data.stage_semaine] || null;
+      const table = STAGE_PRICES[slug] || STAGE_PRICES.default;
+      return /6 – 12/.test(data.stage_age || '')
+        ? { price: table.old, note: '6 – 12 ans, garderie incluse · -10% dès le 2e enfant' }
+        : { price: table.young, note: '2,5 – 5 ans, garderie incluse · -10% dès le 2e enfant' };
     }
     if (activity === 'sejour') return { price: '750 €', note: 'transport et pension complète inclus' };
     return { price: '—', note: '' };
@@ -214,7 +227,12 @@
       setText('[data-done="email"]', data.parent_email || 'vous');
       setText('[data-done="activite"]', LABELS[activity] || '—');
       setText('[data-done="option"]', recapOption(activity, data));
-      setText('[data-done="price"]', p.price);
+      // Préférer le montant renvoyé par le serveur (seule source fiable —
+      // notamment avec le tarif famille -10%, inconnu du navigateur) ; ne
+      // retomber sur l'estimation client que si le paiement n'est pas
+      // configuré (result.payment est alors null).
+      const finalPrice = result.payment ? (result.payment.amount || p.price) : p.price;
+      setText('[data-done="price"]', finalPrice);
       showPayment(result.payment, data);
       trackInscription(activity, result.payment);
       goToStep('done');

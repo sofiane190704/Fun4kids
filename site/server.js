@@ -112,7 +112,7 @@ app.post('/api/inscription', async (req, res) => {
   try {
     // Paiement par virement : référence unique + QR code (null tant que
     // PAYMENT_IBAN n'est pas configuré sur Vercel).
-    const pay = await payment.buildPayment(activite, body);
+    const pay = await payment.buildPayment(activite, body, DATA_DIR);
     body._paiement = payment.paymentCell(pay);
     if (pay) body._paiement_ref = pay.reference;
     const filePath = await writer(body);

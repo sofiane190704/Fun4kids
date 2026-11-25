@@ -16,8 +16,13 @@
 // Tant qu'elle n'est pas définie, buildPayment() renvoie null et le site
 // garde l'ancien message (« l'équipe revient vers vous avec les infos
 // bancaires »).
+//
+// Tarif famille : -10% dès le 2e enfant d'un même responsable inscrit à
+// l'académie ou à un stage (pas aux anniversaires, pas au séjour) — voir
+// countPriorSiblings() plus bas pour comment c'est détecté.
 
 const QRCode = require('qrcode');
+const csv = require('./csv');
 
 const BENEFICIARY = process.env.PAYMENT_BENEFICIARY || 'Fun4Kids ASBL';
 const BIC = (process.env.PAYMENT_BIC || '').replace(/\s+/g, '').toUpperCase();
@@ -62,6 +67,18 @@ if (IBAN_RAW && !isValidIban(IBAN_RAW)) {
 // par erreur.
 const CLIENT_ONLY_FIELDS = ['montant', 'montant_note'];
 
+// Prix par semaine de stage (public/stages.html) — la "Semaine givrée" de
+// Noël ne dure que 3 jours et coûte donc moins cher que les semaines de 5
+// jours d'Halloween. Clé = stage_semaine_slug (voir
+// public/js/inscription.js, même table). "default" sert de garde-fou si le
+// slug est absent/inconnu (ne devrait pas arriver via le formulaire réel).
+const STAGE_PRICES_CENTS = {
+  'halloween-1': { young: 8500, old: 10000 },
+  'halloween-2': { young: 8500, old: 10000 },
+  noel: { young: 7500, old: 9000 },
+  default: { young: 8500, old: 10000 },
+};
+
 /** Montant en centimes, même grille que public/js/inscription.js.
  *  Renvoie null quand le prix n'est pas fixe (séances spécifiques/gardien). */
 function computeAmountCents(activity, rawData) {
@@ -78,7 +95,10 @@ function computeAmountCents(activity, rawData) {
     const n = parseInt(data.anniv_count, 10);
     return (n && n >= 10 ? n : 10) * 1400;
   }
-  if (activity === 'stage') return /6 – 12/.test(data.stage_age || '') ? 10000 : 8500;
+  if (activity === 'stage') {
+    const table = STAGE_PRICES_CENTS[data.stage_semaine_slug] || STAGE_PRICES_CENTS.default;
+    return /6 – 12/.test(data.stage_age || '') ? table.old : table.young;
+  }
   if (activity === 'sejour') return 75000;
   return null;
 }
@@ -120,6 +140,37 @@ function formatIban(iban) {
   return iban.replace(/(.{4})/g, '$1 ').trim();
 }
 
+// Tarif famille : -10% dès le 2e enfant d'un même responsable (identifié par
+// e-mail) inscrit à l'académie ou à un stage — pas aux anniversaires, pas au
+// séjour (confirmé par l'ASBL). "2e enfant" est détecté en comptant, dans le
+// journal d'audit (inscriptions-log.csv, qui contient déjà chaque inscription
+// avec son e-mail de responsable), les soumissions passées pour la même
+// activité et le même e-mail — peu importe la semaine de stage ou la
+// formule. Un échec de cette vérification (ex. journal illisible) ne doit
+// jamais bloquer une inscription : on applique alors le tarif plein, par
+// défaut sûr.
+const SIBLING_DISCOUNT_ACTIVITIES = new Set(['academie', 'stage']);
+const SIBLING_DISCOUNT_RATE = 0.10;
+
+async function countPriorSiblings(dataDir, activity, parentEmail) {
+  const email = String(parentEmail || '').trim().toLowerCase();
+  if (!email) return 0;
+  try {
+    return await csv.countRows(dataDir, 'inscriptions-log', (row) => {
+      if (row.activite !== activity) return false;
+      try {
+        const payload = JSON.parse(row.payload);
+        return String(payload.parent_email || '').trim().toLowerCase() === email;
+      } catch (err) {
+        return false;
+      }
+    });
+  } catch (err) {
+    console.error('[payment] vérification du tarif famille impossible, tarif plein appliqué', (err && err.message) || err);
+    return 0;
+  }
+}
+
 /** Contenu EPC069-12 (version 002, UTF-8). La référence est placée dans le
  *  champ « texte libre » (remittance information non structurée), que les
  *  apps bancaires belges reconnaissent et reprennent telle quelle. */
@@ -135,9 +186,17 @@ function epcPayload(cents, ref) {
   ].join('\n');
 }
 
-async function buildPayment(activity, data) {
+async function buildPayment(activity, data, dataDir) {
   if (!IBAN) return null;
-  const cents = computeAmountCents(activity, data);
+  let cents = computeAmountCents(activity, data);
+  let discountApplied = false;
+  if (cents != null && SIBLING_DISCOUNT_ACTIVITIES.has(activity)) {
+    const priorSiblings = await countPriorSiblings(dataDir, activity, data.parent_email);
+    if (priorSiblings >= 1) {
+      cents = Math.round(cents * (1 - SIBLING_DISCOUNT_RATE));
+      discountApplied = true;
+    }
+  }
   const reference = generateReadableReference(activity, data);
   const payment = {
     beneficiary: BENEFICIARY,
@@ -145,6 +204,7 @@ async function buildPayment(activity, data) {
     reference,
     amountCents: cents,
     amount: cents == null ? null : formatEuros(cents),
+    discountApplied,
     qr: null,
   };
   if (cents != null) {
@@ -154,10 +214,12 @@ async function buildPayment(activity, data) {
 }
 
 /** Texte écrit dans la colonne PAIEMENT des listings Excel, pour que l'équipe
- *  retrouve facilement le virement sur l'extrait bancaire. */
+ *  retrouve facilement le virement sur l'extrait bancaire — et comprenne
+ *  immédiatement pourquoi un montant est inférieur au tarif plein. */
 function paymentCell(payment) {
   if (!payment) return '';
-  return `À recevoir${payment.amount ? ' ' + payment.amount : ''} · ${payment.reference}`;
+  const discountNote = payment.discountApplied ? ' (tarif famille -10 % appliqué)' : '';
+  return `À recevoir${payment.amount ? ' ' + payment.amount : ''}${discountNote} · ${payment.reference}`;
 }
 
 module.exports = { buildPayment, paymentCell, computeAmountCents, generateReadableReference, epcPayload, isValidIban };

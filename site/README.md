@@ -214,6 +214,23 @@ Production) puis redéployer :
 Les séances spécifiques / gardien de l'Académie n'ont pas de prix fixe :
 la communication est affichée, sans montant ni QR code.
 
+Les stages ont un prix différent par semaine (`lib/payment.js`, table
+`STAGE_PRICES_CENTS`, clé = `stage_semaine_slug`) : les semaines d'Halloween
+(5 jours) coûtent 85 €/100 € selon l'âge, la Semaine givrée de Noël (3
+jours) coûte 75 €/90 €.
+
+**Tarif famille** : -10% appliqué automatiquement dès le 2e enfant d'un
+même responsable (identifié par e-mail) inscrit à l'académie ou à un stage
+— pas aux anniversaires, pas au séjour. Détecté en comptant, dans
+`inscriptions-log.csv`, les inscriptions déjà enregistrées pour la même
+activité et le même e-mail (`lib/payment.js`, `countPriorSiblings`). La
+colonne PAIEMENT des Excel précise `(tarif famille -10 % appliqué)` quand
+c'est le cas, pour que l'équipe comprenne un montant inférieur au tarif
+plein en le rapprochant du virement reçu.
+
+L'inscription envoie aussi un événement Google Analytics `generate_lead`
+(activité + montant), uniquement si le visiteur a accepté les cookies.
+
 L'inscription envoie aussi un événement Google Analytics `generate_lead`
 (activité + montant), uniquement si le visiteur a accepté les cookies.
 

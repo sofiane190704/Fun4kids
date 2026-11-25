@@ -54,4 +54,64 @@ async function appendRow(dataDir, name, columns, row) {
   return filePath;
 }
 
-module.exports = { appendRow };
+/** Parses CSV content (as written by toRow/escapeCsv above — comma-separated,
+ *  double-quote-escaped fields) into an array of row arrays. */
+function parseCsv(content) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < content.length; i++) {
+    const c = content[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (content[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ',') {
+      row.push(field); field = '';
+    } else if (c === '\r') {
+      // ignored; \n (below) ends the row
+    } else if (c === '\n') {
+      row.push(field); field = ''; rows.push(row); row = [];
+    } else {
+      field += c;
+    }
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  return rows.filter((r) => !(r.length === 1 && r[0] === ''));
+}
+
+/**
+ * Counts existing rows in <name>.csv matching `predicate(rowObject)`, where
+ * rowObject is keyed by the file's own header row. Returns 0 if the file
+ * doesn't exist yet. Used for small, point-in-time lookups (e.g. "has this
+ * parent already registered a child for this activity?") — not meant for
+ * large-scale querying.
+ */
+async function countRows(dataDir, name, predicate) {
+  let content;
+  if (blobStore.USE_BLOB) {
+    const buf = await blobStore.readBlob(`data/${name}.csv`);
+    content = buf ? buf.toString('utf8') : '';
+  } else {
+    const filePath = path.join(dataDir, `${name}.csv`);
+    content = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
+  }
+  if (!content) return 0;
+  const rows = parseCsv(content);
+  if (rows.length <= 1) return 0; // header only, or empty
+  const header = rows[0];
+  let count = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const obj = {};
+    header.forEach((h, idx) => { obj[h] = rows[i][idx]; });
+    if (predicate(obj)) count++;
+  }
+  return count;
+}
+
+module.exports = { appendRow, countRows };
